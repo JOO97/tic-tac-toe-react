@@ -84,7 +84,7 @@ class Game extends React.Component {
     }
   }
 
-  handleClick(i) {
+  getCurrentData(isReset = false) {
     const { isAsc } = this.state
     let history = []
     if (isAsc) {
@@ -95,13 +95,27 @@ class Game extends React.Component {
         this.state.history.length
       )
     }
-    console.log('h', history)
+    if (isReset) {
+      this.setState({
+        history,
+      })
+    }
     const current = history[isAsc ? history.length - 1 : 0]
     const squares = current.squares.slice()
+    return {
+      history,
+      squares,
+    }
+  }
+
+  handleClick(i) {
+    const { isAsc, stepNumber, history: h } = this.state
+    const { history, squares } = this.getCurrentData(stepNumber !== h.length)
     if (calculateWinner(squares) || squares[i]) return
     squares[i] = this.state.xIsNext ? 'X' : 'O'
     const x = Math.ceil((i + 1) / 3)
     const y = !((i + 1) % 3) ? 3 : (i + 1) % 3
+    const index = i + 1
     this.setState({
       history: isAsc
         ? history.concat([
@@ -109,6 +123,7 @@ class Game extends React.Component {
               squares,
               x,
               y,
+              index,
             },
           ])
         : [
@@ -116,15 +131,13 @@ class Game extends React.Component {
               squares,
               x,
               y,
+              index,
             },
           ].concat(history),
       xIsNext: !this.state.xIsNext,
-      stepNumber: history.length,
+      stepNumber: isAsc ? history.length : 0,
     })
-    const winner = calculateWinner(squares)
-    if (winner) {
-      this.setWinnerIndex(winner)
-    }
+    this.setWinnerIndex(calculateWinner(squares))
   }
 
   jumpTo(index) {
@@ -132,10 +145,15 @@ class Game extends React.Component {
       stepNumber: index,
       xIsNext: index % 2 === 0,
     })
+    const { squares } = this.getCurrentData()
+    this.setWinnerIndex(calculateWinner(squares))
   }
 
-  setWinnerIndex({ index }) {
-    const winnerIndex = index.slice()
+  setWinnerIndex(winner) {
+    let winnerIndex = []
+    if (winner) {
+      winnerIndex = winner.index.slice()
+    }
     this.setState({
       winnerIndex,
     })
@@ -149,7 +167,7 @@ class Game extends React.Component {
       const filter = item.squares.filter((items) => items === null)
       const desc =
         filter.length < item.squares.length
-          ? `Go to move #${index}-(${item.x}, ${item.y})`
+          ? `Go to move #${item.index}-(${item.x}, ${item.y})`
           : `Game Start`
       return (
         <li key={index}>
@@ -196,11 +214,11 @@ class Game extends React.Component {
               this.setState({
                 isAsc: !this.state.isAsc,
                 history,
+                stepNumber: history.length - this.state.stepNumber - 1,
               })
             }}
           >
-            {/* TODO */}
-            {/* {this.state.isAsc ? '升序' : '降序'}- {this.state.isAsc + ''} */}
+            {this.state.isAsc ? '升序' : '降序'}- {this.state.isAsc + ''}
           </button>
         </div>
       </div>
