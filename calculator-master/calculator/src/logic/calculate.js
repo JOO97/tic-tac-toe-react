@@ -1,13 +1,31 @@
 import Big from 'big.js'
 
-const operator = ['÷', 'x', '-', '+', '%']
+const operator = ['÷', 'x', '-', '+']
 
 function isNumber(value) {
   return /[0-9]+/.test(value)
 }
 
 function operate(n1, n2, operator) {
-  return 1
+  const one = new Big(n1 || '0')
+  const two = new Big(n2 || (operator === '÷' ? '1' : '0'))
+  switch (operator) {
+    case '-':
+      return one.minus(two).toString()
+    case '+':
+      return one.plus(two).toString()
+    case '÷':
+      if (two === ' 0') {
+        alert('error: divide by 0')
+        return '0'
+      } else {
+        return one.div(two).toString()
+      }
+    case 'x':
+      return one.times(two).toString()
+    default:
+      throw Error(`unknown operator: ${operator}`)
+  }
 }
 
 export default function calculate(obj, btnName) {
@@ -31,14 +49,24 @@ export default function calculate(obj, btnName) {
     return { next: btnName, result: null }
   }
 
-  //'÷', 'x', '-', '+', '%'
+  //'÷', 'x', '-', '+'
   if (operator.includes(btnName)) {
     if (next || result) {
-      let extra = {}
-      if (result) {
-        extra = {}
+      let r = {}
+      if (next) {
+        if (result) {
+          r = {
+            result: operate(result, next, operation),
+            next: null,
+          }
+        } else {
+          r = {
+            result: next,
+            next: null,
+          }
+        }
+        return { operation: btnName, ...r }
       }
-      return { operation: btnName, ...extra }
     }
   }
 
@@ -48,6 +76,27 @@ export default function calculate(obj, btnName) {
         result: operate(result, next, operation),
         next: null,
         operation: null,
+      }
+    }
+  }
+
+  if (btnName === '%') {
+    if (operation && next) {
+      const r = operate(result, next, operation)
+      return {
+        result: Big(r).div(Big('100')).toString(),
+        next: null,
+        operation: null,
+      }
+    }
+    if (next) {
+      return {
+        next: Big(next).div(Big('100')).toString(),
+      }
+    }
+    if (!operation && result) {
+      return {
+        result: Big(result).div(Big('100')).toString(),
       }
     }
   }
